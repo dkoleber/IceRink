@@ -3,11 +3,16 @@ import threading
 from typing import List
 
 
+FRICTION = .9995
+
 def angle_between(angle_1, angle_2):
     result = angle_2 - angle_1
     if abs(result) > math.pi:
         result = (math.pi * 2) - result
     return result
+
+def pythagorean(x_distance, y_distance):
+    return math.sqrt((x_distance * x_distance) + (y_distance * y_distance))
 
 
 r2d = (180./math.pi)
@@ -20,7 +25,6 @@ class Mass:
         self.y = y
         self.v_x = v_x
         self.v_y = v_y
-
         self.radius = 0
         self.volume = 0
 
@@ -28,8 +32,10 @@ class Mass:
 
     def __str__(self):
         return f'<Mass {self.amount}kg ({str(self.x)[:7]} + {str(self.v_x)[:7]}, {str(self.y)[:7]} + {str(self.v_y)[:7]})>' #@ {self.density}kg/m^2
+
     def __repr__(self):
         return str(self)
+
     def eject(self, amount, density, v_x, v_y):
         if amount >= self.amount:
             return None
@@ -104,7 +110,12 @@ class Mass:
     def collides_with(self, other) -> bool: # TODO: make this return if any sections overlap, not just the center
         x_distance = abs(other.x - self.x)
         y_distance = abs(other.y - self.y)
-        return math.sqrt((x_distance*x_distance) + (y_distance*y_distance)) < self.radius
+        return pythagorean(x_distance, y_distance) < self.radius
+
+    def contains_point(self, x, y):
+        x_distance = abs(self.x - x)
+        y_distance = abs(self.y - y)
+        return pythagorean(x_distance, y_distance) < self.radius
 
     def reprocess(self):
         self.radius = math.sqrt((self.amount / self.density) / math.pi)
@@ -120,13 +131,13 @@ class Engine:
                 continue
 
             # move things in bounds if they managed to get out of bounds
-            if entity.x < 0:
+            if entity.x - entity.radius < 0:
                 entity.x = entity.radius
-            if entity.y < 0:
+            if entity.y - entity.radius< 0:
                 entity.y = entity.radius
-            if entity.x > self.bounds[0]:
+            if entity.x + entity.radius > self.bounds[0]:
                 entity.x = self.bounds[0] - entity.radius
-            if entity.y > self.bounds[1]:
+            if entity.y + entity.radius > self.bounds[1]:
                 entity.y = self.bounds[1] - entity.radius
 
             # movement + bouncing in the x direction
@@ -144,20 +155,24 @@ class Engine:
                 else:
                      entity.x += entity.v_x
 
+                entity.v_x *= FRICTION
+
             # movement + bouncing in the x direction
             if entity.v_y != 0:
                 if (entity.y + entity.v_y - entity.radius) < 0:
                     entity.v_y = entity.v_y * -1
                     y_in = (entity.y - entity.radius)
                     y_out = entity.v_y - y_in
-                    entity.x += y_out
+                    entity.y += y_out
                 elif (entity.y + entity.radius + entity.v_y) > self.bounds[1]:
                     entity.v_y = entity.v_y * -1
                     y_in = self.bounds[1] - (entity.y + entity.radius)
                     y_out = entity.v_y - y_in
-                    entity.x += y_out
+                    entity.y += y_out
                 else:
                     entity.y += entity.v_y
+
+                entity.v_y *= FRICTION
 
             # check collisions
             for other in self.entities:

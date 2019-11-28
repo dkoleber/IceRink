@@ -27,7 +27,7 @@ def run():
 
     bounds = (1000, 1000)
 
-    mass_1 = Mass(10000,default_density,500,500, 0, 0)
+    mass_1 = Mass(100000,default_density,500,500, 0, 0)
     # mass_1 = Mass(2000,2,500,500, -1, -1)
 
     engine = Engine(bounds)

@@ -1,4 +1,5 @@
 import math
+import random
 import sys
 import threading
 from typing import List
@@ -10,6 +11,7 @@ from PyQt5.QtWidgets import QApplication, QWidget
 
 pyximport.install()
 from Engine import Engine, Mass
+
 
 class WorldView(QWidget):
     def __init__(self, reference_engine:Engine, bounds=(1000,1000)):
@@ -23,7 +25,6 @@ class WorldView(QWidget):
         self.timer.timeout.connect(self.update)
         self.timer.start(1000 / 60)
 
-
     def paintEvent(self, event:QEvent):
         painter = QPainter()
         painter.begin(self)
@@ -35,6 +36,16 @@ class WorldView(QWidget):
             painter.setBrush(QColor(100, 200, 50, alpha))
             painter.setPen(QColor(100, 200, 50, alpha))
             painter.drawEllipse(QPoint(entity.x, entity.y), entity.radius, entity.radius)
+
+    def mousePressEvent(self, event:QEvent):
+        x = event.pos().x()
+        y = event.pos().y()
+        for entity in self.reference_engine.entities:
+            if entity.contains_point(x, y):
+                new_mass = entity.eject(int(entity.amount / 2), entity.density, random.randint(-2, 2), random.randint(-2, 2))
+                if new_mass != None:
+                    self.reference_engine.add_mass(new_mass)
+                break
 
 
 class Renderer(threading.Thread):
