@@ -20,14 +20,16 @@ class Mass:
         self.y = y
         self.v_x = v_x
         self.v_y = v_y
+
+        self.radius = 0
+        self.volume = 0
+
+        self.reprocess()
+
     def __str__(self):
         return f'<Mass {self.amount}kg ({str(self.x)[:7]} + {str(self.v_x)[:7]}, {str(self.y)[:7]} + {str(self.v_y)[:7]})>' #@ {self.density}kg/m^2
     def __repr__(self):
         return str(self)
-    def get_volume(self):
-        return self.amount / self.density
-    def get_radius(self):
-        return math.sqrt((self.amount / self.density) / math.pi)
     def eject(self, amount, density, v_x, v_y):
         if amount >= self.amount:
             return None
@@ -68,7 +70,7 @@ class Mass:
                 actual_angle += (math.pi / 2)*(diff_angle / abs(diff_angle))
         else:
             actual_angle += math.pi
-        distance = result.get_radius() + self.get_radius()
+        distance = result.radius + self.radius
         result.x = self.x + math.cos(actual_angle) * distance
         result.y = self.y + math.sin(actual_angle) * distance
 
@@ -82,10 +84,31 @@ class Mass:
         result.x += shift_x
         result.y += shift_y
 
+        self.reprocess()
+
         return result
 
     def combine(self, other):
-        pass
+        i_m_x = (self.amount * self.v_x) + (other.amount * other.v_x)
+        i_m_y = (self.amount * self.v_y) + (other.amount * other.v_y)
+
+        self.amount += other.amount
+        self.v_x = i_m_x / self.amount
+        self.v_y = i_m_y / self.amount
+
+        other.amount = 0
+
+        # other.reprocess()
+        self.reprocess()
+
+    def collides_with(self, other) -> bool: # TODO: make this return if any sections overlap, not just the center
+        x_distance = abs(other.x - self.x)
+        y_distance = abs(other.y - self.y)
+        return math.sqrt((x_distance*x_distance) + (y_distance*y_distance)) < self.radius
+
+    def reprocess(self):
+        self.radius = math.sqrt((self.amount / self.density) / math.pi)
+        self.volume = self.amount / self.density
 
 class Engine:
     def __init__(self, bounds=(1000, 1000)):
@@ -93,46 +116,57 @@ class Engine:
         self.bounds = bounds
     def step(self):
         for entity in self.entities:
-
-            radius = entity.get_radius()
+            if entity.amount <= 0:
+                continue
 
             # move things in bounds if they managed to get out of bounds
             if entity.x < 0:
-                entity.x = radius
+                entity.x = entity.radius
             if entity.y < 0:
-                entity.y = radius
+                entity.y = entity.radius
             if entity.x > self.bounds[0]:
-                entity.x = self.bounds[0] - radius
+                entity.x = self.bounds[0] - entity.radius
             if entity.y > self.bounds[1]:
-                entity.y = self.bounds[1] - radius
+                entity.y = self.bounds[1] - entity.radius
 
+            # movement + bouncing in the x direction
             if entity.v_x != 0:
-                if (entity.x + entity.v_x - radius) < 0:
+                if (entity.x + entity.v_x - entity.radius) < 0:
                     entity.v_x = entity.v_x * -1
-                    x_in = (entity.x - radius)
+                    x_in = (entity.x - entity.radius)
                     x_out = entity.v_x - x_in
                     entity.x += x_out
-                elif (entity.x + radius + entity.v_x) > self.bounds[0]:
+                elif (entity.x + entity.radius + entity.v_x) > self.bounds[0]:
                     entity.v_x = entity.v_x * -1
-                    x_in = self.bounds[0] - (entity.x + radius)
+                    x_in = self.bounds[0] - (entity.x + entity.radius)
                     x_out = entity.v_x - x_in
                     entity.x += x_out
                 else:
                      entity.x += entity.v_x
 
+            # movement + bouncing in the x direction
             if entity.v_y != 0:
-                if (entity.y + entity.v_y - radius) < 0:
+                if (entity.y + entity.v_y - entity.radius) < 0:
                     entity.v_y = entity.v_y * -1
-                    y_in = (entity.y - radius)
+                    y_in = (entity.y - entity.radius)
                     y_out = entity.v_y - y_in
                     entity.x += y_out
-                elif (entity.y + radius + entity.v_y) > self.bounds[1]:
+                elif (entity.y + entity.radius + entity.v_y) > self.bounds[1]:
                     entity.v_y = entity.v_y * -1
-                    y_in = self.bounds[1] - (entity.y + radius)
+                    y_in = self.bounds[1] - (entity.y + entity.radius)
                     y_out = entity.v_y - y_in
                     entity.x += y_out
                 else:
                     entity.y += entity.v_y
+
+            # check collisions
+            for other in self.entities:
+                if other is not entity:
+                    if entity.amount > other.amount and entity.collides_with(other):
+                        entity.combine(other)
+
+        self.entities = [x for x in self.entities if x.amount > 0]
+
 
 
     def add_mass(self, mass:Mass):

@@ -23,6 +23,7 @@ class WorldView(QWidget):
         self.timer.timeout.connect(self.update)
         self.timer.start(1000 / 60)
 
+
     def paintEvent(self, event:QEvent):
         painter = QPainter()
         painter.begin(self)
@@ -33,8 +34,7 @@ class WorldView(QWidget):
             alpha = math.tanh(entity.density) * 255
             painter.setBrush(QColor(100, 200, 50, alpha))
             painter.setPen(QColor(100, 200, 50, alpha))
-            radius = entity.get_radius()
-            painter.drawEllipse(QPoint(entity.x, entity.y), radius, radius)
+            painter.drawEllipse(QPoint(entity.x, entity.y), entity.radius, entity.radius)
 
 
 class Renderer(threading.Thread):

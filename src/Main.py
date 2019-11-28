@@ -22,9 +22,12 @@ def run_frame(function: Callable, frame_time:float):
 
 
 def run():
+    default_density = .5
+
+
     bounds = (1000, 1000)
 
-    mass_1 = Mass(8000,2,500,500, 0, 0)
+    mass_1 = Mass(10000,default_density,500,500, 0, 0)
     # mass_1 = Mass(2000,2,500,500, -1, -1)
 
     engine = Engine(bounds)
@@ -40,9 +43,9 @@ def run():
         global steps
 
         engine.step()
-        if steps % 60 == 0:
+        if steps % 60 == 0 and steps < 300:
             for entity in engine.entities:
-                new_mass = entity.eject(int(entity.amount / 2), 1, random.randint(-2, 2), random.randint(-2, 2))
+                new_mass = entity.eject(int(entity.amount / 2), default_density, random.randint(-2, 2), random.randint(-2, 2))
 
                 if new_mass is not None:
                     engine.add_mass(new_mass)
