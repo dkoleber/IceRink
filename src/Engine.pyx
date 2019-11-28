@@ -48,49 +48,29 @@ class Mass:
         # calculate orientation of new mass relative to this one
         n_angle = (math.atan2(self.v_y, self.v_x) + (math.pi * 2)) % (math.pi * 2)
         r_angle = (math.atan2(result.v_y, result.v_x) + (math.pi * 2)) % (math.pi * 2)
-        # diff_angle = r_angle - n_angle
         diff_angle = angle_between(n_angle, r_angle)
-
-        # print(f'init n({n_angle * r2d}) r({r_angle * r2d}) d({diff_angle * r2d})')
-
         actual_angle = n_angle
         if self.v_x == 0 and self.v_y == 0:
-            # print('self not moving')
             actual_angle = r_angle
         elif result.v_x != 0 or result.v_y != 0:  # if the new mass isn't moving, just use this mass' angle
             if abs(diff_angle) > (math.pi / 2): # indicating they're not going the same direction
-                # print(f'different directions')
                 n_angle += math.pi
                 n_angle %= (math.pi * 2)
-                # actual_angle = (ratio * r_angle) + ((1 - ratio) * n_angle)
                 actual_angle = n_angle + (angle_between(n_angle, r_angle) * (1 - ratio))
-                # print(f'n({n_angle * (180/math.pi)}) r({r_angle * (180/math.pi)}) a({actual_angle * (180/math.pi)})')
-            elif n_angle == r_angle:
-                # if they're going the exact same direction
-                # print('exact same directions')
+            elif n_angle == r_angle: # if they're going the exact same direction
                 if result.v_x == self.v_x: # if the new mass is going the same speed, they go side by side
                     actual_angle += (math.pi / 2)
                 elif result.v_x < self.v_x: # if it's going slower, it goes in back
                     actual_angle += math.pi
                 # otherwise,  the new mass is going faster, so it goes in front which is the default
-
             else: # indicating they're going the same direction
-                # print('same directions')
-                # actual_angle = (ratio * r_angle) + ((1 - ratio) * n_angle)
                 actual_angle = n_angle + (angle_between(n_angle, r_angle) * (1 - ratio))
                 actual_angle += (math.pi / 2)*(diff_angle / abs(diff_angle))
-
         else:
-            # print('other not moving')
             actual_angle += math.pi
-
-        # print(f'a({actual_angle * r2d})')
-
         distance = result.get_radius() + self.get_radius()
         result.x = self.x + math.cos(actual_angle) * distance
         result.y = self.y + math.sin(actual_angle) * distance
-
-
 
         # calculate center of mass for combination of masses
         com_x = (ratio * result.x) + ((1 - ratio) * self.x)
@@ -108,11 +88,52 @@ class Mass:
         pass
 
 class Engine:
-    def __init__(self):
+    def __init__(self, bounds=(1000, 1000)):
         self.entities:List[Mass] = []
+        self.bounds = bounds
     def step(self):
         for entity in self.entities:
-            entity.x += entity.v_x
-            entity.y += entity.v_y
+
+            radius = entity.get_radius()
+
+            # move things in bounds if they managed to get out of bounds
+            if entity.x < 0:
+                entity.x = radius
+            if entity.y < 0:
+                entity.y = radius
+            if entity.x > self.bounds[0]:
+                entity.x = self.bounds[0] - radius
+            if entity.y > self.bounds[1]:
+                entity.y = self.bounds[1] - radius
+
+            if entity.v_x != 0:
+                if (entity.x + entity.v_x - radius) < 0:
+                    entity.v_x = entity.v_x * -1
+                    x_in = (entity.x - radius)
+                    x_out = entity.v_x - x_in
+                    entity.x += x_out
+                elif (entity.x + radius + entity.v_x) > self.bounds[0]:
+                    entity.v_x = entity.v_x * -1
+                    x_in = self.bounds[0] - (entity.x + radius)
+                    x_out = entity.v_x - x_in
+                    entity.x += x_out
+                else:
+                     entity.x += entity.v_x
+
+            if entity.v_y != 0:
+                if (entity.y + entity.v_y - radius) < 0:
+                    entity.v_y = entity.v_y * -1
+                    y_in = (entity.y - radius)
+                    y_out = entity.v_y - y_in
+                    entity.x += y_out
+                elif (entity.y + radius + entity.v_y) > self.bounds[1]:
+                    entity.v_y = entity.v_y * -1
+                    y_in = self.bounds[1] - (entity.y + radius)
+                    y_out = entity.v_y - y_in
+                    entity.x += y_out
+                else:
+                    entity.y += entity.v_y
+
+
     def add_mass(self, mass:Mass):
         self.entities.append(mass)

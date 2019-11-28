@@ -22,42 +22,31 @@ def run_frame(function: Callable, frame_time:float):
 
 
 def run():
+    bounds = (1000, 1000)
+
     mass_1 = Mass(8000,2,500,500, 0, 0)
     # mass_1 = Mass(2000,2,500,500, -1, -1)
 
-    engine = Engine()
+    engine = Engine(bounds)
     engine.add_mass(mass_1)
     # engine.add_mass(Mass(500,5,200,100, 1, -1))
 
-    renderer = Renderer(engine)
+    renderer = Renderer(engine, bounds)
     renderer.start()
 
     frame_time = 1 / FPS
-
-    tests = [
-             (2, 2),
-             (-1, 1),
-             (-1, 2),
-             (-1, -1),
-             (1, 1),
-             (0, 0),
-             (1, -1)
-             ]
-
 
     def step():
         global steps
 
         engine.step()
         if steps % 60 == 0:
-            ind = int((steps / 60) % len(tests))
-            # print('-'*10)
-            # print(engine.entities)
-            new_mass = mass_1.eject(100, 1, random.randint(-2, 2), random.randint(-2, 2))
-            # print(f'testing {ind}')
-            # new_mass = mass_1.eject(100, 1, tests[ind][0], tests[ind][1])
-            if new_mass is not None:
-                engine.add_mass(new_mass)
+            for entity in engine.entities:
+                new_mass = entity.eject(int(entity.amount / 2), 1, random.randint(-2, 2), random.randint(-2, 2))
+
+                if new_mass is not None:
+                    engine.add_mass(new_mass)
+            print(len(engine.entities))
         steps += 1
 
 

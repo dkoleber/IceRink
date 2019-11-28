@@ -12,9 +12,9 @@ pyximport.install()
 from Engine import Engine, Mass
 
 class WorldView(QWidget):
-    def __init__(self, reference_engine:Engine):
+    def __init__(self, reference_engine:Engine, bounds=(1000,1000)):
         super().__init__()
-        self.setGeometry(100, 100, 1000, 1000)
+        self.setGeometry(100, 100, bounds[0], bounds[1])
         self.show()
         self.count = 0
         self.reference_engine = reference_engine
@@ -38,15 +38,16 @@ class WorldView(QWidget):
 
 
 class Renderer(threading.Thread):
-    def __init__(self, reference_engine:Engine):
+    def __init__(self, reference_engine:Engine, bounds=(1000,1000)):
         super().__init__()
         self.engine = reference_engine
         self.is_running = False
+        self.bounds = bounds
 
     def run(self):
         self.is_running = True
         self.application = QApplication([])
-        self.world_view = WorldView(self.engine)
+        self.world_view = WorldView(self.engine, self.bounds)
         self.application.exec_()
         # sys.exit(self.application.exec_())
         self.is_running = False
