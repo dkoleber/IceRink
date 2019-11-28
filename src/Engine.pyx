@@ -85,10 +85,14 @@ class Mass:
         com_y = (ratio * result.y) + ((1 - ratio) * self.y)
         shift_x = com_x - self.x
         shift_y = com_y - self.y
-        self.x += shift_x
-        self.y += shift_y
-        result.x += shift_x
-        result.y += shift_y
+        # self.x += shift_x
+        # self.y += shift_y
+        # result.x += shift_x
+        # result.y += shift_y
+        self.x -= shift_x
+        self.y -= shift_y
+        result.x -= shift_x
+        result.y -= shift_y
 
         self.reprocess()
 
