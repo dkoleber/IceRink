@@ -1,5 +1,7 @@
 import math
+import random
 import threading
+from abc import ABC, abstractmethod
 from typing import List
 
 
@@ -13,6 +15,9 @@ def angle_between(angle_1, angle_2):
 
 def pythagorean(x_distance, y_distance):
     return math.sqrt((x_distance * x_distance) + (y_distance * y_distance))
+
+
+
 
 
 r2d = (180./math.pi)
@@ -85,10 +90,6 @@ class Mass:
         com_y = (ratio * result.y) + ((1 - ratio) * self.y)
         shift_x = com_x - self.x
         shift_y = com_y - self.y
-        # self.x += shift_x
-        # self.y += shift_y
-        # result.x += shift_x
-        # result.y += shift_y
         self.x -= shift_x
         self.y -= shift_y
         result.x -= shift_x
@@ -125,12 +126,52 @@ class Mass:
         self.radius = math.sqrt((self.amount / self.density) / math.pi)
         self.volume = self.amount / self.density
 
+class Agent(Mass, ABC):
+    def __init__(self, amount, density, x, y):
+        super().__init__(amount, density, x, y)
+        self.init()
+
+    @abstractmethod
+    def init(self):
+        pass
+
+    @abstractmethod
+    def act(self):
+        pass
+
+class RandomAgent(Agent):
+    def init(self):
+        super().init()
+        self.tick = 0
+
+    def act(self):
+        # TODO: how to pass results of actions out of method?
+        # if self.tick % 60 == 0:
+        #     print('acting')
+        #     self.eject(100, .5, random.randint(-2, 2), random.randint(-2, 2))
+        # self.tick += 1
+        pass
+
+
+
+def insertion_sort(data:List[Mass]):
+    for i in range(1, len(data)):
+        hold = data[i]
+        pos = i
+        while pos > 0 and data[pos-1].amount < hold.amount:
+            data[pos] = data[pos-1]
+            pos -= 1
+        data[pos] = hold
+
+
 class Engine:
     def __init__(self, bounds=(1000, 1000)):
         self.entities:List[Mass] = []
         self.bounds = bounds
     def step(self):
-        for entity in self.entities:
+        for i in range(len(self.entities)):
+            entity = self.entities[i]
+
             if entity.amount <= 0:
                 continue
 
@@ -179,12 +220,23 @@ class Engine:
                 entity.v_y *= FRICTION
 
             # check collisions
-            for other in self.entities:
+            for j in range(i, len(self.entities)):
+                other = self.entities[j]
                 if other is not entity:
                     if entity.amount > other.amount and entity.collides_with(other):
                         entity.combine(other)
 
-        self.entities = [x for x in self.entities if x.amount > 0]
+            if isinstance(entity, Agent):
+                entity.act()
+
+        insertion_sort(self.entities)
+
+        for i in range(len(self.entities) -1, -1, -1): #after sorting, all masses with mass 0 will be at the end of the list so we don't have to cover the entire thing.
+            if self.entities[i].amount <= 0:
+                del self.entities[i]
+            else:
+                break
+
 
 
 

@@ -4,7 +4,7 @@ from typing import Callable
 
 import pyximport
 pyximport.install()
-from Engine import Engine, Mass
+from Engine import Engine, Mass, RandomAgent
 
 from Renderer import Renderer
 
@@ -22,37 +22,26 @@ def run_frame(function: Callable, frame_time:float):
 
 
 def run():
-    default_density = .5
-
-
     bounds = (1000, 1000)
-
-    mass_1 = Mass(100000,default_density,500,500, 0, 0)
-    # mass_1 = Mass(2000,2,500,500, -1, -1)
-
     engine = Engine(bounds)
-    engine.add_mass(mass_1)
-    # engine.add_mass(Mass(500,5,200,100, 1, -1))
+
+    # mass_1 = Mass(100000,1,500,500, 0, 0)
+    # engine.add_mass(mass_1)
+
+    agent_1 = RandomAgent(100000, 1, 500, 500)
+    engine.add_mass(agent_1)
 
     renderer = Renderer(engine, bounds)
     renderer.start()
 
-    frame_time = 1 / FPS
+
 
     def step():
         global steps
-
         engine.step()
-        if steps % 60 == 0 and steps < 300:
-            for entity in engine.entities:
-                new_mass = entity.eject(int(entity.amount / 2), default_density, random.randint(-2, 2), random.randint(-2, 2))
-
-                if new_mass is not None:
-                    engine.add_mass(new_mass)
-            print(len(engine.entities))
         steps += 1
 
-
+    frame_time = 1 / FPS
     while(renderer.is_running):
 
         run_frame(step, frame_time)
